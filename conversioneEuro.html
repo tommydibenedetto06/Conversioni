@@ -1,1 +1,151 @@
-# Conversioni
+<html>
+<body>
+    <h1>conversione</h1>
+
+    inserire la cifra
+    <input type="number" id="cifra" placeholder="importo">
+
+    inserire la Valuta
+    <input type="text" id="valuta" placeholder="valuta">
+
+    <button onclick="converti()">Converti</button>
+</body>
+<style>
+    body
+        {
+        font-family: Arial, sans-serif; /* Font principale Arial */
+        background-color: #14665f; /* Colore di sfondo */
+        color: #000000; /* Colore del testo */
+        margin: 0;
+        padding: 20px;
+    }
+
+    h1
+    {
+        text-align: center; /* Allineamento del titolo */
+        color: #070808; /* Colore del titolo */
+        margin-bottom: 20px;
+        font-weight: bold; /* Grassetto */
+        text-shadow: 10px 2px 5px rgba(0, 0, 0, 0.3); /* ombra */
+
+    }
+    
+    table
+    {
+        width: 85%; /* Riduce la larghezza per una visualizzazione migliore */
+        margin: 0 auto; /* Centra la tabella */
+        border-collapse: collapse; /* Unisce i bordi delle celle */
+        background-color: #2c3e50; /* Colore di sfondo della tabella */
+        border-radius: 8px; /* Arrotonda gli angoli */
+        overflow: hidden; /* Rimuove angoli tagliati */
+        box-shadow: 0 10px 20px rgba(134, 4, 4, 0.5); /* Aggiunge un'ombra */
+    }
+
+    th, td
+    {
+        border: 1px solid #34495e; /* Bordi delle celle */
+        padding: 12px; /* Spaziatura interna nelle celle */
+        text-align: center; /* Centra il contenuto */
+    }
+
+    th
+    {
+        background-color: #2c3e50; /* Colore di sfondo delle intestazioni */
+        color: #f4f4f4; /* Colore del testo delle intestazioni */
+        font-weight: bold; /* Grassetto per le intestazioni */
+        text-transform: uppercase; /* Testo in maiuscolo */
+    }
+
+    tr:nth-child(even)
+    {
+        background-color: #e3f2fd; /* Colore per le righe pari */
+    }
+
+    tr:nth-child(odd)
+    {
+    background-color: #bbdefb; /* Colore per le righe dispari */
+    }
+
+    tr:hover
+    {
+        background-color: #d6ab2b; /* Cambia colore al passaggio del mouse */
+    }
+
+</style>
+    <script>
+        let tassiCambio = [];  // Array per memorizzare le conversioni delle valute
+
+        // Funzione per caricare conversioni
+        function caricaTassiCambio() {
+            
+            let xhr = new XMLHttpRequest();  // richiesta HTTP
+
+            xhr.open("GET", "conversione.xml", true);
+            xhr.send();
+
+            xhr.onload = function()
+            {
+                if (xhr.status === 200) // Se la richiesta ha avuto successo (status 200)
+                {  
+                    const xmlData = xhr.responseXML;  // Ottieni la risposta come documento XML
+                    const tassi = xmlData.getElementsByTagName("Cube")[1].children;  // Ottieni i tassi di cambio
+
+                    // Inizializza la tabella con l'intestazione
+                    let tableContent = "<tr><th>Valuta</th><th>Tasso di Cambio (1 EUR)</th></tr>";
+                    let selectOptions = "";  // Variabile per memorizzare le opzioni del menu a discesa
+
+                    // Ciclo che passa attraverso ogni elemento <Cube> contenente una valuta e il suo tasso di cambio
+                    for (let i = 0; i < tassi.length; i++) {
+                        const valuta = tassi[i].getAttribute("currency");  // Ottieni il nome della valuta
+                        const tasso = tassi[i].getAttribute("rate");  // Ottieni il tasso di cambio per quella valuta
+
+                        if (valuta && tasso) {  // Se sia la valuta che il tasso sono validi
+                            // Aggiungi una riga alla tabella con la valuta e il tasso di cambio
+                            tableContent += `<tr><td>${valuta}</td><td>${parseFloat(tasso).toFixed(4)}</td></tr>`;
+                            // Aggiungi un'opzione al menu a discesa per quella valuta
+                            selectOptions += `<option value="${valuta}" data-rate="${tasso}">${valuta}</option>`;
+                            // Memorizza il tasso di cambio nell'array tassiCambio
+                            tassiCambio[valuta] = parseFloat(tasso);
+                        }
+                    }
+
+                    // Popola la tabella con i tassi di cambio
+                    document.getElementById("currencyTable").innerHTML = tableContent;
+                    // Popola il menu a discesa con le valute
+                    document.getElementById("currencySelect").innerHTML = selectOptions;
+                } else {
+                    console.error("Errore nel caricamento del file XML");  // Se la richiesta fallisce, logga un errore
+                }
+            };
+        }
+
+        // Funzione che esegue la conversione quando l'utente clicca sul bottone "Converti"
+        function converti() {
+            const amount = parseFloat(document.getElementById("amount").value);  // Legge l'importo inserito dall'utente
+            const selectedCurrency = document.getElementById("currencySelect").value;  // Ottiene la valuta selezionata
+
+            if (isNaN(amount) || amount <= 0) {  // Verifica che l'importo sia un numero valido e positivo
+                alert("Per favore inserisci un importo valido.");  // Se l'importo non è valido, mostra un messaggio di errore
+                return;  // Interrompe l'esecuzione della funzione
+            }
+
+            if (!selectedCurrency) {  // Verifica che l'utente abbia selezionato una valuta
+                alert("Per favore seleziona una valuta.");  // Se nessuna valuta è selezionata, mostra un messaggio di errore
+                return;  // Interrompe l'esecuzione della funzione
+            }
+
+            // Ottiene il tasso di cambio per la valuta selezionata
+            const tasso = tassiCambio[selectedCurrency];
+            if (tasso) {  // Se il tasso di cambio è valido
+                const risultato = amount * tasso;  // Calcola l'importo convertito
+                document.getElementById("conversionResult").innerText = `${amount} EUR = ${risultato.toFixed(2)} ${selectedCurrency}`;  // Mostra il risultato nella pagina
+            } else {
+                alert("Tasso di cambio non trovato.");  // Se il tasso di cambio non è trovato, mostra un messaggio di errore
+            }
+        }
+
+        // Carica i tassi di cambio quando la pagina è completamente caricata
+        window.onload = caricaTassiCambio;
+    </script>
+</html>
+
